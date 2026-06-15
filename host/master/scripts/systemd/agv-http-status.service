@@ -1,0 +1,20 @@
+[Unit]
+Description=AGV HTTP Status API — FCGI endpoint serving /api/status
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-model-manager.service agv-log-daemon.service
+Requires=agv-log-daemon.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/opt/enavigate-master/build/src/http_service/Status
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-http-status
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

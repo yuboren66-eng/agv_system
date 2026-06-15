@@ -1,0 +1,20 @@
+[Unit]
+Description=AGV Log Daemon — centralized logging via POSIX message queue
+Documentation=https://github.com/uplf/ENavigate
+After=syslog.target
+Wants=syslog.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/enavigate-master/build/src/log_daemon/log_daemon
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-log-daemon
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

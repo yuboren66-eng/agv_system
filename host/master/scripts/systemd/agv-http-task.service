@@ -1,0 +1,20 @@
+[Unit]
+Description=AGV HTTP Task API — FCGI endpoint serving /api/assign, /api/cancel, etc.
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-model-manager.service agv-log-daemon.service
+Requires=agv-log-daemon.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/opt/enavigate-master/build/src/http_service/Task
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-http-task
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

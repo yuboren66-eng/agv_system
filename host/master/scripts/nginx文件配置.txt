@@ -1,0 +1,74 @@
+# /etc/nginx/sites-available/agv
+#
+# AGV 调度系统 Nginx 配置
+#
+# 部署步骤：
+#   1. cp agv.nginx /etc/nginx/sites-available/agv
+#   2. ln -s /etc/nginx/sites-available/agv /etc/nginx/sites-enabled/agv
+#   3. rm /etc/nginx/sites-enabled/default   # 移除默认站点
+#   4. mkdir -p /run/agv                     # socket 目录
+#   5. nginx -t                              # 语法检查
+#   6. systemctl reload nginx
+
+server {
+    listen 80;
+    server_name _;          # 匹配任意域名 / IP 访问
+
+    # ── 静态网页（你已写好的前端）──────────────────────────────────
+    root /opt/agv/web;
+    index index.html;
+
+    # 前端 SPA：所有非 API 路径都返回 index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ── FastCGI 公共参数 ────────────────────────────────────────────
+    # 定义在各 location 内部，避免重复
+
+    # ── GET /api/status ────────────────────────────────────────────
+    location = /api/status {
+        fastcgi_pass  unix:/run/agv/status.sock;
+        include       fastcgi_params;
+        fastcgi_param REQUEST_URI  $request_uri;
+        fastcgi_param REQUEST_METHOD $request_method;
+
+        # 禁用缓存，前端每 2s 轮询一次
+        add_header Cache-Control "no-cache, no-store";
+    }
+
+    # ── POST /api/assign  POST /api/cancel ─────────────────────────
+    location ~ ^/api/(assign|cancel)$ {
+        fastcgi_pass  unix:/run/agv/task.sock;
+        include       fastcgi_params;
+        fastcgi_param REQUEST_URI  $request_uri;
+        fastcgi_param REQUEST_METHOD $request_method;
+        fastcgi_param CONTENT_LENGTH $content_length;
+        fastcgi_param CONTENT_TYPE   $content_type;
+    }
+
+    # ── POST /api/ban  /api/access  /api/repair ────────────────────
+    location ~ ^/api/(ban|access|repair)$ {
+        fastcgi_pass  unix:/run/agv/topo.sock;
+        include       fastcgi_params;
+        fastcgi_param REQUEST_URI  $request_uri;
+        fastcgi_param REQUEST_METHOD $request_method;
+        fastcgi_param CONTENT_LENGTH $content_length;
+        fastcgi_param CONTENT_TYPE   $content_type;
+    }
+
+    # ── 兜底 404 ───────────────────────────────────────────────────
+    location /api/ {
+        return 404 '{"code":404,"msg":"接口不存在","data":null}';
+        add_header Content-Type application/json;
+    }
+
+    # ── 超时配置 ───────────────────────────────────────────────────
+    fastcgi_read_timeout  10s;
+    fastcgi_send_timeout  10s;
+    fastcgi_connect_timeout 5s;
+
+    # ── 日志 ───────────────────────────────────────────────────────
+    access_log  /var/log/nginx/agv_access.log;
+    error_log   /var/log/nginx/agv_error.log;
+}

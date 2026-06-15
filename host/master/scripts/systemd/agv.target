@@ -1,0 +1,16 @@
+[Unit]
+Description=AGV Dispatch System — all core services
+Documentation=https://github.com/openclaw/ENavigate
+Requires=agv-log-daemon.service
+          agv-model-manager.service
+          agv-router.service
+          agv-planner.service
+          agv-http-status.service
+          agv-http-topo.service
+          agv-http-task.service
+          agv-mqtt-subscriber.service
+          agv-mqtt-publisher.service
+Wants=mosquitto.service
+
+[Install]
+WantedBy=multi-user.target

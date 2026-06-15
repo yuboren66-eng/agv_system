@@ -1,0 +1,10 @@
+build/
+*dev*.md
+.vscode/
+.idea/
+.DS_Store
+*.*workspace
+.claude/
+.pio/
+*.ini
+peripheral/include/credentials.h

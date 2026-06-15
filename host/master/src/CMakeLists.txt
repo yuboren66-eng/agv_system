@@ -1,0 +1,6 @@
+add_subdirectory(log_daemon)
+add_subdirectory(model_manager)
+add_subdirectory(mqtt_service)
+add_subdirectory(http_service)
+add_subdirectory(planner)
+add_subdirectory(router)

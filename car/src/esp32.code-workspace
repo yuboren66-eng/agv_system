@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "../../esp32"
+		},
+		{
+			"name": "esp32_副本",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"python-envs.defaultEnvManager": "ms-python.python:conda",
+		"python-envs.defaultPackageManager": "ms-python.python:conda"
+	}
+}

@@ -1,0 +1,21 @@
+[Unit]
+Description=AGV MQTT Subscriber — receives car status from MQTT broker, writes SHM
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-model-manager.service agv-log-daemon.service mosquitto.service
+Requires=agv-log-daemon.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/enavigate-master/build/src/mqtt_service/mqtt_subscriber
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-mqtt-subscriber
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

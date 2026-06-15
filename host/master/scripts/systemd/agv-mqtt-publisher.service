@@ -1,0 +1,21 @@
+[Unit]
+Description=AGV MQTT Publisher — publishes task/control messages to MQTT broker
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-log-daemon.service mosquitto.service
+Requires=agv-log-daemon.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/enavigate-master/build/src/mqtt_service/mqtt_publisher
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-mqtt-publisher
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

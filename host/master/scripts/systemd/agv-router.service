@@ -1,0 +1,20 @@
+[Unit]
+Description=AGV Path Router — reads SHM map, provides path planning queries
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-model-manager.service agv-log-daemon.service
+Requires=agv-model-manager.service agv-log-daemon.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/enavigate-master/build/src/router/router
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-router
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+[Unit]
+Description=AGV Model Manager — SHM owner, initializes map/car data
+Documentation=https://github.com/openclaw/ENavigate
+After=agv-log-daemon.service
+Requires=agv-log-daemon.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/enavigate-master/build/src/model_manager/model_manager
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agv-model-manager
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

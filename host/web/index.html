@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGV 调度系统控制台</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --border: #30363d;
+  --border2: #444c56;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --blue: #388bfd;
+  --blue-dim: #1f4074;
+  --green: #3fb950;
+  --green-dim: #1a4a23;
+  --amber: #d29922;
+  --amber-dim: #4a3000;
+  --red: #f85149;
+  --red-dim: #4a1010;
+  --gray: #6e7681;
+  --accent: #58a6ff;
+  --purple: #bc8cff;
+  --purple-dim: #3a1f5c;
+  --mono: 'Share Tech Mono', monospace;
+  --sans: 'Noto Sans SC', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 28px; height: 28px;
+  background: var(--blue);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; font-family: var(--mono);
+}
+.header-title {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: .08em;
+}
+.header-sub { font-size: 11px; color: var(--text2); letter-spacing: .05em; }
+.header-right {
+  display: flex; align-items: center; gap: 16px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+}
+.sys-status {
+  display: flex; align-items: center; gap: 6px;
+}
+.pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+#clock { font-family: var(--mono); color: var(--accent); }
+
+/* ── layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: 1fr 210px;
+  gap: 1px;
+  background: var(--border);
+  height: calc(100vh - 49px);
+  min-height: 540px;
+}
+.panel {
+  background: var(--bg);
+  padding: 14px;
+  overflow: hidden;
+}
+.panel-topo { grid-row: 1/3; }
+.panel-ops  { grid-row: 1/3; }
+
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.panel-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px;
+}
+.panel-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 12px;
+  background: var(--blue);
+  border-radius: 2px;
+}
+
+/* ── topology svg ── */
+#topo-wrap {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#topo-svg {
+  display: block;
+  width: 100%;
+  min-width: 920px;
+}
+
+.sel-info {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  min-height: 18px;
+}
+.sel-info span { color: var(--accent); }
+
+/* legend */
+.legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  margin-top: 10px;
+}
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+.leg-line { width: 18px; height: 3px; border-radius: 2px; }
+
+/* ── cars ── */
+.cars-row {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.car-btn {
+  flex: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 10px 8px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+  overflow: hidden;
+}
+.car-btn::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--c, var(--blue));
+  border-radius: 3px 0 0 3px;
+}
+.car-btn.selected {
+  border-color: var(--c, var(--blue));
+  background: var(--bg3);
+  box-shadow: 0 0 0 1px var(--c, var(--blue));
+}
+.car-btn:hover:not(.selected) { border-color: var(--border2); }
+.car-top {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 5px;
+}
+.car-badge {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+  color: var(--c, var(--blue));
+}
+.car-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.car-status-pill {
+  margin-left: auto;
+  font-size: 10px; font-family: var(--mono);
+  padding: 2px 7px; border-radius: 10px;
+  background: color-mix(in srgb, var(--c, var(--blue)) 18%, transparent);
+  color: var(--c, var(--blue));
+  border: 1px solid color-mix(in srgb, var(--c, var(--blue)) 35%, transparent);
+}
+.car-meta {
+  font-family: var(--mono); font-size: 10px; color: var(--text2);
+  display: flex; gap: 10px;
+}
+
+/* ── action buttons ── */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.btn {
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .12s;
+  text-align: center;
+}
+.btn:hover { background: var(--bg3); border-color: var(--border2); }
+.btn:active { transform: scale(.97); }
+.btn-assign { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+.btn-assign:hover { background: var(--blue); color: #fff; }
+.btn-cancel { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn-cancel:hover { background: var(--red); color: #fff; }
+.btn-ban { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.btn-ban:hover { background: var(--amber); color: #000; }
+.btn-allow { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-allow:hover { background: var(--green); color: #000; }
+.btn-refresh { grid-column: 1/3; }
+
+
+/* ── toggle switch ── */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.toggle-switch input { display: none; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: .2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 14px; width: 14px;
+  left: 2px; bottom: 2px;
+  background: var(--text2);
+  border-radius: 50%;
+  transition: .2s;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+  background: var(--green);
+}
+
+/* ── broadcast / log ── */
+.log-area {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 8px 10px;
+  height: 140px;
+  overflow-y: auto;
+  font-family: var(--mono); font-size: 11px;
+}
+.log-line {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 8px;
+  animation: fadein .3s ease;
+}
+@keyframes fadein { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+.log-time { color: var(--text3); min-width: 72px; }
+.log-lvl-info { color: var(--blue); }
+.log-lvl-warn { color: var(--amber); }
+.log-lvl-err  { color: var(--red); }
+.log-lvl-ok   { color: var(--green); }
+.log-msg { color: var(--text2); flex: 1; }
+
+/* ── ops panel layout ── */
+.panel-ops {
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* modal overlay (toast) */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-size: 13px; font-family: var(--mono);
+  padding: 8px 20px; border-radius: 20px;
+  pointer-events: none; opacity: 0;
+  transition: opacity .25s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon">AGV</div>
+    <div>
+      <div class="header-title">AGV DISPATCH CONSOLE</div>
+      <div class="header-sub">智能调度系统控制台 · v1.0</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sys-status"><div class="pulse"></div><span>系统在线</span></div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── 左：拓扑图 ── -->
+  <div class="panel panel-topo">
+    <div class="panel-header">
+      <div class="panel-title">拓扑图</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text2)">点击节点单选 · 点击路径多选</div>
+    </div>
+    <div id="topo-wrap">
+      <svg id="topo-svg" viewBox="0 0 920 380" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="sel-info" id="sel-info">未选中任何节点或路径</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#388bfd"></div>空闲节点</div>
+      <div class="leg"><div class="leg-dot" style="background:#3fb950"></div>已选中</div>
+      <div class="leg"><div class="leg-dot" style="background:#f85149"></div>节点故障</div>
+      <div class="leg"><div class="leg-line" style="background:#4a5568"></div>空闲路径</div>
+      <div class="leg"><div class="leg-line" style="background:#d29922"></div>有车通过</div>
+      <div class="leg"><div class="leg-line" style="background:#ff5722"></div>暂时故障</div>
+      <div class="leg"><div class="leg-line" style="background:#d849f8"></div>待修复故障</div>
+      <div class="leg"><div class="leg-line" style="background:#ff9800"></div>禁止通行</div>
+      <div class="leg"><div class="leg-line" style="background:#3fb950"></div>选中标签</div>
+    </div>
+
+    <div class="panel-title" style="margin-top:10px;margin-bottom:8px">广播信息</div>
+    <div id="broadcast" style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text2);min-height:36px;margin-bottom:10px">
+      等待系统广播...
+    </div>
+
+    <div class="panel-header" style="margin-bottom:6px">
+      <div class="panel-title">系统日志</div>
+      <button class="btn" style="padding:3px 10px;font-size:11px" onclick="clearLog()">清空</button>
+    </div>
+    <div class="log-area" id="log-area" style="height:120px"></div>
+  </div>
+
+  <!-- ── 右上：操作 ── -->
+  <div class="panel panel-ops">
+    <div class="panel-header">
+      <div class="panel-title">小车状态</div>
+    </div>
+    <div class="cars-row" id="cars-row"></div>
+
+    <div class="panel-title" style="margin-bottom:8px">操作指令</div>
+    <div class="actions">
+      <button class="btn btn-assign" onclick="doAssign()">▶ 指派</button>
+      <button class="btn btn-cancel" onclick="doCancel()">✕ 取消任务</button>
+      <button class="btn btn-ban"    onclick="doBan()">⊘ 禁止通行</button>
+      <button class="btn btn-allow"  onclick="doAllow()">✓ 允许通行</button>
+      <button class="btn btn-refresh" onclick="doRefresh()">↺ 刷新数据</button>
+      <div style="display:flex;align-items:center;grid-column:1/3;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:7px 10px">
+        <span style="font-size:11px;color:var(--text2)">自动刷新</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh()">
+          <span class="toggle-slider"></span>
+        </label>
+        <input type="number" id="refresh-interval" value="5" min="1" max="300" step="1"
+               style="width:50px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:11px;text-align:center;padding:2px 4px">
+        <span style="font-size:11px;color:var(--text2)">秒</span>
+      </div>
+      <button class="btn" onclick="selectAllEdges()">全选路径</button>
+      <button class="btn" onclick="deselectAllEdges()">取消全选</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───────────────────────── 拓扑数据 ───────────────────────── */
+let NODES = [
+  {id:'N1',  label:'N1',  x:70,  y:70,  name:'起始点'},
+  {id:'N2',  label:'N2',  x:70,  y:190, name:'起始点'},
+  {id:'N3',  label:'N3',  x:70,  y:310, name:'起始点'},
+
+  {id:'N4',  label:'N4',  x:260, y:70,  name:''},
+  {id:'N5',  label:'N5',  x:260, y:190, name:''},
+  {id:'N6',  label:'N6',  x:260, y:310, name:''},
+
+  {id:'N7',  label:'N7',  x:450, y:70,  name:''},
+  {id:'N8',  label:'N8',  x:450, y:190, name:''},
+  {id:'N9',  label:'N9',  x:450, y:310, name:''},
+
+  {id:'N10', label:'N10', x:640, y:70,  name:''},
+  {id:'N11', label:'N11', x:640, y:190, name:''},
+  {id:'N12', label:'N12', x:640, y:310, name:''},
+
+  {id:'N13', label:'N13', x:830, y:70,  name:'结束点'},
+  {id:'N14', label:'N14', x:830, y:190, name:'结束点'},
+  {id:'N15', label:'N15', x:830, y:310, name:'结束点'},
+];
+let EDGES = [
+  {id:'L1',  from:'N1',  to:'N4'},
+  {id:'L2',  from:'N2',  to:'N5'},
+  {id:'L3',  from:'N3',  to:'N6'},
+
+  {id:'L4',  from:'N4',  to:'N5'},
+  {id:'L5',  from:'N5',  to:'N6'},
+
+  {id:'L6',  from:'N4',  to:'N7'},
+  {id:'L7',  from:'N5',  to:'N8'},
+  {id:'L8',  from:'N6',  to:'N9'},
+
+  {id:'L9',  from:'N7',  to:'N8'},
+  {id:'L10', from:'N8',  to:'N9'},
+
+  {id:'L11', from:'N7',  to:'N10'},
+  {id:'L12', from:'N8',  to:'N11'},
+  {id:'L13', from:'N9',  to:'N12'},
+
+  {id:'L14', from:'N10', to:'N11'},
+  {id:'L15', from:'N11', to:'N12'},
+
+  {id:'L16', from:'N10', to:'N13'},
+  {id:'L17', from:'N11', to:'N14'},
+  {id:'L18', from:'N12', to:'N15'},
+];
+
+/* ───────────────────────── 配置 ───────────────────────── */
+const SERVER_URL = ''; // 服务器地址，部署时填写
+
+/* ───────────────────────── 状态 ───────────────────────── */
+const CAR_COLORS = {idle:'#388bfd', moving:'#3fb950', fault:'#f85149', offline:'#6e7681',realloc:'#d29922'};
+const CAR_STATUS_CN = {idle:'待指派', moving:'行进中', fault:'故  障', offline:'离  线',realloc:'待重新分配'};
+const CAR_ROUTE_COLORS = {
+  C1: '#00eaff',  // C1 路径颜色：青蓝色
+  C2: '#3fb950'   // C2 路径颜色：黄色
+};
+
+let state = {
+  nodes: {},
+  edges: {},
+  cars: {
+    C1:{id:'C1',name:'小车1',status:'idle',pos:'L2',nxt:'N5'},
+    C2:{id:'C2',name:'小车2',status:'moving',pos:'L5',nxt:'N6'},
+  },
+  selectedNode: null,
+  selectedEdges: new Set(),
+  selectedCar: null,
+
+};
+
+function initState() {
+  NODES.forEach(n => state.nodes[n.id] = {status:'idle'});
+  EDGES.forEach(e => state.edges[e.id] = {status:'idle'});
+}
+
+/* ───────────────────────── helpers ───────────────────────── */
+function getNode(id){ return NODES.find(n=>n.id===id); }
+function getEdge(id){ return EDGES.find(e=>e.id===id); }
+
+function normalizeCarStatus(status){
+  const statusMap = {
+    '待指派': 'idle',
+    '行进中': 'moving',
+    '运行中': 'moving',
+    '待重新分配': 'realloc',
+    '故障': 'fault',
+    '离线': 'offline'
+  };
+  return statusMap[status] || status || 'idle';
+}
+
+function normalizePathList(value){
+  if(!value) return [];
+  if(Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+  if(typeof value === 'string') return value.split(/[,\s>→]+/).map(item => item.trim()).filter(Boolean);
+  return [];
+}
+
+function isActiveRouteCar(car){
+  return car && ['moving', 'realloc'].includes(car.status);
+}
+
+function getCarPathEdges(car){
+  if(!car) return [];
+  const directPath = normalizePathList(car.path);
+  if(directPath.length) return directPath;
+
+  const taskPath = normalizePathList(car.task?.path || car.task?.route || car.task?.edges || car.current_path || car.currentPath);
+  if(taskPath.length) return taskPath;
+
+  return [];
+}
+
+function getCarPathLabel(car){
+  const pathEdges = getCarPathEdges(car);
+  if(pathEdges.length) return pathEdges.join(' → ');
+
+  const from = car?.task?.from;
+  const to = car?.task?.to;
+  if(from && to) return `${from} → ${to}`;
+
+  return '--';
+}
+
+function getEdgeRouteCar(edgeId){
+  return Object.values(state.cars).find(car =>
+    isActiveRouteCar(car) && getCarPathEdges(car).includes(edgeId)
+  );
+}
+
+function getRouteCarsOnEdge(edgeId){
+  if(!state.selectedCar) return [];
+
+  const car = state.cars[state.selectedCar];
+
+  if(
+    isActiveRouteCar(car) &&
+    getCarPathEdges(car).includes(edgeId)
+  ){
+    return [car];
+  }
+
+  return [];
+}
+
+function isEdgeOnActiveRoute(edgeId){
+  return getRouteCarsOnEdge(edgeId).length > 0;
+}
+
+function nodeColor(id){
+  if(state.selectedNode===id) return '#3fb950';
+  const s = state.nodes[id]?.status||'idle';
+  if(s==='fault') return '#f85149';
+  if(s==='occupied') return '#d29922';
+  return '#388bfd';
+}
+function edgeStroke(id){
+  const s = state.edges[id]?.status || 'idle';
+
+  if(s === 'fault_repair') return '#d849f8';
+  if(s === 'fault_temp') return '#ff5722';
+  if(s === 'blocked') return '#ff9800';
+  if(s === 'occupied') return '#d29922';
+  return '#4a5568';
+}
+
+
+function edgeLabelColor(id){
+  if(state.selectedEdges.has(id)) return '#3fb950';
+  return edgeStroke(id);
+}
+function edgeW(id){
+  return 3;
+}
+
+/* ───────────────────────── render SVG ───────────────────────── */
+function renderSVG(){
+  const svg = document.getElementById('topo-svg');
+  let h = '';
+
+  // grid lines (subtle)
+  for(let x=0;x<=920;x+=60) h+=`<line x1="${x}" y1="0" x2="${x}" y2="380" stroke="#1a1f27" stroke-width="1"/>`;
+  for(let y=0;y<=380;y+=60) h+=`<line x1="0" y1="${y}" x2="920" y2="${y}" stroke="#1a1f27" stroke-width="1"/>`;
+
+  // edges
+  EDGES.forEach(e=>{
+    const a=getNode(e.from), b=getNode(e.to);
+    const s = state.edges[e.id]?.status||'idle';
+    const lineCol=edgeStroke(e.id), labelCol=edgeLabelColor(e.id), w=edgeW(e.id);
+    const sel=state.selectedEdges.has(e.id);
+    const dash = s==='blocked' ? `stroke-dasharray="8 4"` : s==='fault_temp' ? `stroke-dasharray="4 4"` : s==='fault_repair' ? `stroke-dasharray="2 4"` : '';
+    h+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${lineCol}" stroke-width="${w}" stroke-linecap="round" ${dash} style="cursor:pointer" onclick="toggleEdge('${e.id}')"/>`;
+    const routeCars = getRouteCarsOnEdge(e.id);
+
+    routeCars.forEach((car, idx) => {
+      const routeCol = CAR_ROUTE_COLORS[car.id] || '#00eaff';
+
+      // 行进中：实线；待重新分配：虚线
+      const routeDash = car.status === 'realloc'
+        ? 'stroke-dasharray="8 6"'
+        : '';
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+
+      const nx = -dy / len;
+      const ny = dx / len;
+
+      const baseOffset = 8 + idx * 5;
+
+      h += `<line x1="${a.x + nx * baseOffset}" y1="${a.y + ny * baseOffset}"
+                  x2="${b.x + nx * baseOffset}" y2="${b.y + ny * baseOffset}"
+                  stroke="${routeCol}" stroke-width="2"
+                  ${routeDash}
+                  stroke-linecap="round"
+                  opacity="0.95" pointer-events="none"/>`;
+
+      h += `<line x1="${a.x - nx * baseOffset}" y1="${a.y - ny * baseOffset}"
+                  x2="${b.x - nx * baseOffset}" y2="${b.y - ny * baseOffset}"
+                  stroke="${routeCol}" stroke-width="2"
+                  ${routeDash}
+                  stroke-linecap="round"
+                  opacity="0.95" pointer-events="none"/>`;
+    });
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const errType = state.edges[e.id]?.errType || state.edges[e.id]?.err_type || '';
+    const errLabel = errType ? `-${errType}` : '';
+    const labelText = `${e.id}${errLabel}`;
+    // labelRectWidth: 每字符 ~8px (12pt monospace) + 内边距 24px
+    const labelW = Math.max(32, labelText.length * 8 + 24);
+    const bg = sel?'#1a4a23':'#21262d';
+    h+=`<rect x="${mx-labelW/2}" y="${my-12}" width="${labelW}" height="24" rx="5" fill="${bg}" stroke="${labelCol}" stroke-width="1" style="cursor:pointer" onclick="toggleEdge('${e.id}')"/>`;
+    h+=`<text x="${mx}" y="${my+1}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-family="Share Tech Mono,monospace" font-weight="700" fill="${labelCol}" style="cursor:pointer;pointer-events:none">${labelText}</text>`;
+  });
+
+  // defs (filters)
+  h = `<defs>
+    <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>` + h;
+
+  // nodes
+  NODES.forEach(n=>{
+    const col=nodeColor(n.id);
+    const sel=state.selectedNode===n.id;
+    const glow = sel?`filter="url(#glow-green)"`: `filter="url(#glow-blue)"`;
+    // outer ring
+    if(sel) h+=`<circle cx="${n.x}" cy="${n.y}" r="38" fill="none" stroke="#3fb950" stroke-width="1" stroke-dasharray="4 3" opacity=".6"/>`;
+    h+=`<circle cx="${n.x}" cy="${n.y}" r="30" fill="#161b22" stroke="${col}" stroke-width="2" ${glow} style="cursor:pointer" onclick="selectNode('${n.id}')"/>`;
+    h+=`<text x="${n.x}" y="${n.y-4}" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="15" font-weight="700" fill="${col}" style="pointer-events:none">${n.id}</text>`;
+    h+=`<text x="${n.x}" y="${n.y+11}" text-anchor="middle" dominant-baseline="middle" font-family="Noto Sans SC,sans-serif" font-size="11" fill="#8b949e" style="pointer-events:none">${n.name}</text>`;
+  });
+
+  // cars
+  Object.values(state.cars).forEach(car=>{
+    if(!car.pos) return;
+    const col=CAR_COLORS[car.status]||'#888';
+    let cx,cy;
+    // pos 现在是边 ID，小车显示在边上
+    const ed=getEdge(car.pos); if(!ed)return;
+    const a=getNode(ed.from),b=getNode(ed.to);
+    let t=0.5;
+    if(car.nxt){
+      // 小车靠近 nxt 指定的节点（边有两个端点，位置偏向 nxt）
+      t = car.nxt === b.id ? 0.72 : 0.28;
+    } else {
+      t=car.id==='C1'?0.36:0.64;
+    }
+    cx=a.x+(b.x-a.x)*t; cy=a.y+(b.y-a.y)*t;
+    h+=`<rect x="${cx-20}" y="${cy-13}" width="40" height="26" rx="6" fill="${col}" stroke="#0d1117" stroke-width="1.5"/>`;
+    h+=`<text x="${cx}" y="${cy+2}" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="12" font-weight="700" fill="#fff" style="pointer-events:none">${car.id}</text>`;
+    // 方向箭头：沿着 pos 边，从车指向 nxt 节点
+    const arrowDx = b.x - a.x, arrowDy = b.y - a.y;
+    const arrowLen = Math.sqrt(arrowDx * arrowDx + arrowDy * arrowDy) || 1;
+    const arrowNx = arrowDx / arrowLen, arrowNy = arrowDy / arrowLen;
+    const dirSign = car.nxt === b.id ? 1 : -1;
+    const arrowBaseX = cx + arrowNx * dirSign * 20;
+    const arrowBaseY = cy + arrowNy * dirSign * 20;
+    const tipOff = 12;
+    const halfW  = 6;
+    const tipX = arrowBaseX + arrowNx * dirSign * tipOff;
+    const tipY = arrowBaseY + arrowNy * dirSign * tipOff;
+    h+=`<polygon points="${arrowBaseX+halfW*arrowNy},${arrowBaseY-halfW*arrowNx} ${arrowBaseX-halfW*arrowNy},${arrowBaseY+halfW*arrowNx} ${tipX},${tipY}" fill="${col}" stroke="#0d1117" stroke-width="0.5" opacity="0.9"/>`;
+    // moving indicator
+    if(car.status==='moving'){
+      h+=`<circle cx="${cx+14}" cy="${cy-9}" r="4" fill="#3fb950"><animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/></circle>`;
+    }
+  });
+
+  svg.innerHTML = h;
+}
+
+/* ───────────────────────── interaction ───────────────────────── */
+function selectNode(id){
+  state.selectedNode = state.selectedNode===id ? null : id;
+  updateSelInfo(); renderSVG();
+}
+function toggleEdge(id){
+  if(state.selectedEdges.has(id)) state.selectedEdges.delete(id);
+  else state.selectedEdges.add(id);
+  updateSelInfo(); renderSVG();
+}
+function updateSelInfo(){
+  const el=document.getElementById('sel-info');
+  const parts=[];
+  if(state.selectedNode) parts.push(`节点 <span>${state.selectedNode}</span>`);
+  if(state.selectedEdges.size) parts.push(`路径 <span>${[...state.selectedEdges].join('、')}</span>`);
+  el.innerHTML = parts.length ? '已选中：' + parts.join('，') : '未选中任何节点或路径';
+}
+
+function updateRepairButton(){
+  // 已移除
+}
+
+function clearSelection(){
+  state.selectedNode = null;
+  state.selectedEdges.clear();
+  updateSelInfo(); renderSVG();
+}
+
+function selectAllEdges(){
+  EDGES.forEach(e => state.selectedEdges.add(e.id));
+  updateSelInfo(); renderSVG();
+}
+
+function deselectAllEdges(){
+  state.selectedEdges.clear();
+  updateSelInfo(); renderSVG();
+}
+
+/* ───────────────────────── cars panel ───────────────────────── */
+function renderCars(){
+  const el=document.getElementById('cars-row');
+  el.innerHTML = Object.values(state.cars).map(car=>{
+    const col=CAR_COLORS[car.status];
+    const sel=state.selectedCar===car.id;
+    return `<div class="car-btn${sel?' selected':''}" style="--c:${col}" onclick="selectCar('${car.id}')">
+      <div class="car-top">
+        <div class="car-badge">${car.id}</div>
+        <div class="car-name">${car.name}</div>
+        <div class="car-status-pill">${CAR_STATUS_CN[car.status]}</div>
+      </div>
+      <div class="car-meta">
+        <span>位置: ${car.pos||'--'} → ${car.nxt||'--'}</span>
+        ${car.task?.from && car.task?.to ? `<span>任务: ${car.task.from}→${car.task.to}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectCar(id){
+  state.selectedCar = state.selectedCar===id ? null : id;
+  renderCars();
+  renderSVG();   
+}
+
+/* ───────────────────────── actions ───────────────────────── */
+function postAPI(endpoint, body, label){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  return fetch(`${SERVER_URL}${endpoint}`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Accept': 'application/json' 
+    },
+    body: JSON.stringify(body),
+    signal: controller.signal
+  })
+  .then(async res => {
+    clearTimeout(timeoutId);
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch(e) {
+      data = {};
+    }
+
+    const msg = data.msg || data.message || data.info || '';
+
+    // 情况1：HTTP状态码是2xx，认为请求成功
+    if(res.ok){
+      addLog('ok', `[响应] ${label}：${msg || '操作成功'}`);
+      if(data.broadcast) setBroadcast(data.broadcast);
+      setTimeout(()=>doRefresh(), 300);
+      return;
+    }
+
+    // 情况2：HTTP状态码不是2xx，但返回信息里写了“成功”
+    if(msg.includes('成功')){
+      addLog('ok', `[响应] ${label}：${msg}`);
+      if(data.broadcast) setBroadcast(data.broadcast);
+      setTimeout(()=>doRefresh(), 300);
+      return;
+    }
+
+    // 情况3：真正失败
+    addLog('err', `[响应] ${label}失败：HTTP ${res.status}，${msg || '服务器异常'}`);
+    setBroadcast(`[失败] ${label}`);
+    setTimeout(()=>doRefresh(), 600);
+  })
+  .catch(err => {
+    clearTimeout(timeoutId);
+
+    const msg = err.name === 'AbortError' ? '请求超时' : err.message;
+    addLog('err', `[响应] ${label}失败：${msg}`);
+    setBroadcast(`[失败] ${label}`);
+    setTimeout(()=>doRefresh(), 600);
+  });
+}
+
+function doAssign(){
+  if(!state.selectedCar){ toast('请先选中一辆小车'); return; }
+  if(!state.selectedNode){ toast('请先选中目标节点'); return; }
+  const label = `指派 ${state.selectedCar} → ${state.selectedNode}`;
+  const car = state.selectedCar;
+  const target = state.selectedNode;
+  clearSelection();
+  addLog('info', `[请求] ${label}，等待服务器响应...`);
+  setBroadcast(`[请求中] ${label}`);
+  toast('请求已发送');
+  postAPI('/api/assign', { car, target }, label);
+}
+function doCancel(){
+  if(!state.selectedCar){ toast('请先选中一辆小车'); return; }
+  const label = `取消 ${state.selectedCar} 任务`;
+  const car = state.selectedCar;
+  clearSelection();
+  addLog('info', `[请求] ${label}，等待服务器响应...`);
+  setBroadcast(`[请求中] ${label}`);
+  toast('请求已发送');
+  postAPI('/api/cancel', { car }, label);
+}
+function doBan(){
+  if(!state.selectedEdges.size && !state.selectedNode){ toast('请先选中节点或路径'); return; }
+  const allTargets = [...state.selectedEdges, ...(state.selectedNode ? [state.selectedNode] : [])];
+  const edges = allTargets.filter(id => id.startsWith('L'));
+  const nodes = allTargets.filter(id => id.startsWith('N'));
+  const label = `禁止通行：${allTargets.join('、')}`;
+  clearSelection();
+  addLog('info', `[请求] ${label}，等待服务器响应...`);
+  setBroadcast(`[请求中] 封闭：${allTargets.join('、')}`);
+  toast('请求已发送');
+  postAPI('/api/ban', { edges, nodes }, label);
+}
+function doAllow(){
+  if(!state.selectedEdges.size && !state.selectedNode){ toast('请先选中节点或路径'); return; }
+  const allTargets = [...state.selectedEdges, ...(state.selectedNode ? [state.selectedNode] : [])];
+  const edges = allTargets.filter(id => id.startsWith('L'));
+  const nodes = allTargets.filter(id => id.startsWith('N'));
+  const label = `恢复通行：${allTargets.join('、')}`;
+  clearSelection();
+  addLog('info', `[请求] ${label}，等待服务器响应...`);
+  setBroadcast(`[请求中] 开放：${allTargets.join('、')}`);
+  toast('请求已发送');
+  postAPI('/api/access', { edges, nodes }, label);
+}
+function doRepair(){
+  if(!state.selectedEdges.size){ toast('请先选中需要修复的路径'); return; }
+  const repairTargets = [...state.selectedEdges].filter(id => state.edges[id]?.status === 'fault_repair');
+  if(repairTargets.length === 0){ toast('选中的路径中没有待修复故障'); return; }
+  const label = `指派修复：${repairTargets.join('、')}`;
+  clearSelection();
+  addLog('info', `[请求] ${label}，等待服务器响应...`);
+  setBroadcast(`[请求中] 修复：${repairTargets.join('、')}`);
+  toast('请求已发送');
+  postAPI('/api/repair', { edges: repairTargets }, label);
+}
+// ── 自动定时刷新 ──
+let autoRefreshTimer = null;
+
+function toggleAutoRefresh(){
+  const toggle = document.getElementById('auto-refresh-toggle');
+  if(toggle.checked){
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  const intervalSec = parseInt(document.getElementById('refresh-interval').value) || 5;
+  addLog('info',`自动刷新已开启，每 ${intervalSec} 秒刷新一次`);
+  autoRefreshTimer = setInterval(() => {
+    fetchStatus();
+  }, intervalSec * 1000);
+}
+
+function stopAutoRefresh(){
+  if(autoRefreshTimer){
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+}
+
+function doRefresh(){
+  addLog('info','正在从服务器拉取数据...');
+  setBroadcast('刷新中...');
+  fetchStatus();
+}
+
+function fetchStatus(){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+
+  fetch(`${SERVER_URL}/api/status`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json'
+    },
+    signal: controller.signal
+  })
+    .then(response => {
+      clearTimeout(timeoutId);
+      if(response.status === 404){
+        addLog('err', `[404错误] 刷新状态失败：接口不存在 / 请求地址错误`);
+        setBroadcast('[404错误] 刷新状态失败');
+        return null;
+      }
+
+      if(!response.ok){
+        throw new Error(`HTTP错误! 状态: ${response.status}`);
+      }
+
+      return response.json();
+    })
+    .then(data => {
+      if(!data) return;
+      applyJSON(data);
+    })
+    .catch(error => {
+      clearTimeout(timeoutId);
+      console.error('获取状态失败:', error);
+      const errMsg = error.name === 'AbortError' ? '请求超时' : error.message;
+      addLog('err',`获取状态失败: ${errMsg}`);
+      setBroadcast('连接服务器失败，使用模拟数据');
+      // 失败时使用模拟数据
+      setTimeout(() => applyJSON(generateMockJSON()), 300);
+    });
+}
+function clearLog(){ document.getElementById('log-area').innerHTML=''; }
+
+/* ───────────────────────── data / JSON ───────────────────────── */
+function applyJSON(data){
+  // 1. 更新拓扑信息（如果提供）
+  if(data.topology){
+    NODES = data.topology.nodes || NODES;
+    EDGES = data.topology.edges || EDGES;
+    // 重置节点和边的状态
+    state.nodes = {};
+    state.edges = {};
+    NODES.forEach(n => state.nodes[n.id] = {status:'idle'});
+    EDGES.forEach(e => state.edges[e.id] = {status:'idle'});
+    // 清空选中状态，因为拓扑可能已变化
+    state.selectedNode = null;
+    state.selectedEdges.clear();
+    addLog('info','拓扑结构已更新');
+  }
+
+  // 2. 更新节点状态
+  if(data.nodes) Object.entries(data.nodes).forEach(([k,v])=>{
+    if(state.nodes[k]) Object.assign(state.nodes[k], v);
+  });
+
+  // 3. 更新路径状态
+  if(data.edges) Object.entries(data.edges).forEach(([k,v])=>{
+    if(state.edges[k]) Object.assign(state.edges[k], v);
+  });
+
+  // 4. 更新小车状态（完全替换，而不是合并）
+  if(data.cars){
+    state.cars = {};
+    Object.entries(data.cars).forEach(([k,v])=>{
+
+      v.status = normalizeCarStatus(v.status);
+
+      if(typeof v.path === 'string'){
+        v.path = normalizePathList(v.path);
+      }
+
+      if(v.task && typeof v.task.path === 'string'){
+        v.task.path = normalizePathList(v.task.path);
+      }
+
+      state.cars[k] = v;
+    });
+  }
+
+  // 5. 处理广播信息
+  if(data.broadcast) setBroadcast(data.broadcast);
+
+  // 6. 处理告警信息
+  if(data.alerts) data.alerts.forEach(a=>addLog(a.level==='warn'?'warn':'err',a.msg));
+
+  // 7. 追加日志信息（如果有）
+  if(data.logs && Array.isArray(data.logs)){
+    data.logs.forEach(log => {
+      addLog(log.level || 'info', log.msg);
+    });
+  }
+
+  // 8. 添加刷新完成日志
+  addLog('info',`数据刷新完成 · ${data.timestamp||'--'}`);
+
+  // 9. 自动选中第一辆车，要放在 renderSVG 前面
+  if(!state.selectedCar || !state.cars[state.selectedCar]){
+    state.selectedCar = Object.keys(state.cars)[0];
+  }
+
+  // 10. 重新渲染界面
+  renderCars();
+  renderSVG();
+
+  updateSelInfo();
+}
+
+function generateMockJSON(){
+  const now=new Date().toLocaleTimeString('zh-CN');
+  return {
+    timestamp: now,
+    system_status: '正常运行',
+    online_cars: 2,
+    task_count: 3,
+    broadcast: `[${now}] 系统自动刷新 · C2 在 L5 上靠近 N6 · L8 禁止通行`,
+    alerts:[
+      {level:'warn', msg:'L8 路径封闭，绕行建议：L2→L6→L5'}
+    ],
+    cars:{
+      C1:{
+          id:'C1',
+          name:'小车1',
+          status:'realloc',
+          pos:'L2',
+          nxt:'N5',
+          path:['L2','L8']
+        },
+      C2:{
+          id:'C2',
+          name:'小车2',
+          status:'moving',
+          pos:'L5',
+          nxt:'N6',
+          path:['L3','L5','L6'],
+          task:{id:'T002',from:'N3',to:'N4'}
+        }
+    },
+    nodes:{
+      N1:{status:'idle'}, N2:{status:'idle'}, N3:{status:'idle'},
+      N4:{status:'idle'}, N5:{status:'idle'}, N6:{status:'idle'},
+      N7:{status:'idle'}, N8:{status:'idle'}, N9:{status:'idle'},
+      N10:{status:'idle'},N11:{status:'idle'},N12:{status:'idle'},
+      N13:{status:'idle'},N14:{status:'idle'},N15:{status:'idle'},
+    },
+    edges:{
+      L1:{status:'fault_temp', errType:'apple'},  L2:{status:'fault_repair'},  L3:{status:'occupied'},
+      L4:{status:'idle'},  L5:{status:'occupied'}, L6:{status:'idle'},
+      L7:{status:'idle'},  L8:{status:'blocked'}, L9:{status:'idle'},
+      L10:{status:'idle'}, L11:{status:'idle'}, L12:{status:'idle'},
+      L13:{status:'idle'}, L14:{status:'idle'}, L15:{status:'idle'},
+      L16:{status:'idle'}, L17:{status:'idle'}, L18:{status:'idle'},
+    },
+    topology: {
+        nodes : [
+          {id:'N1',  label:'N1',  x:70,  y:70,  name:'起始点'},
+          {id:'N2',  label:'N2',  x:70,  y:190, name:'起始点'},
+          {id:'N3',  label:'N3',  x:70,  y:310, name:'起始点'},
+
+          {id:'N4',  label:'N4',  x:260, y:70,  name:''},
+          {id:'N5',  label:'N5',  x:260, y:190, name:''},
+          {id:'N6',  label:'N6',  x:260, y:310, name:''},
+
+          {id:'N7',  label:'N7',  x:450, y:70,  name:''},
+          {id:'N8',  label:'N8',  x:450, y:190, name:''},
+          {id:'N9',  label:'N9',  x:450, y:310, name:''},
+
+          {id:'N10', label:'N10', x:640, y:70,  name:''},
+          {id:'N11', label:'N11', x:640, y:190, name:''},
+          {id:'N12', label:'N12', x:640, y:310, name:''},
+
+          {id:'N13', label:'N13', x:830, y:70,  name:'结束点'},
+          {id:'N14', label:'N14', x:830, y:190, name:'结束点'},
+          {id:'N15', label:'N15', x:830, y:310, name:'结束点'},
+        ],
+      edges: [
+        {id:'L1',  from:'N1',  to:'N4'},
+        {id:'L2',  from:'N2',  to:'N5'},
+        {id:'L3',  from:'N3',  to:'N6'},
+
+        {id:'L4',  from:'N4',  to:'N5'},
+        {id:'L5',  from:'N5',  to:'N6'},
+
+        {id:'L6',  from:'N4',  to:'N7'},
+        {id:'L7',  from:'N5',  to:'N8'},
+        {id:'L8',  from:'N6',  to:'N9'},
+
+        {id:'L9',  from:'N7',  to:'N8'},
+        {id:'L10', from:'N8',  to:'N9'},
+
+        {id:'L11', from:'N7',  to:'N10'},
+        {id:'L12', from:'N8',  to:'N11'},
+        {id:'L13', from:'N9',  to:'N12'},
+
+        {id:'L14', from:'N10', to:'N11'},
+        {id:'L15', from:'N11', to:'N12'},
+
+        {id:'L16', from:'N10', to:'N13'},
+        {id:'L17', from:'N11', to:'N14'},
+        {id:'L18', from:'N12', to:'N15'},
+      ],
+    },
+    logs: [
+      {level:'info', msg:'C2 开始执行任务 T002 (N3→N4)', timestamp: now},
+      {level:'info', msg:'L1 检测到暂时故障，系统自动调整路线', timestamp: now}
+    ]
+  };
+}
+
+/* ───────────────────────── ui utils ───────────────────────── */
+function setBroadcast(msg){
+  document.getElementById('broadcast').textContent=msg;
+}
+
+let logCount=0;
+function addLog(level,msg){
+  const el=document.getElementById('log-area');
+  const t=new Date().toLocaleTimeString('zh-CN');
+  const div=document.createElement('div');
+  div.className='log-line';
+  const lvlMap={info:'INFO',warn:'WARN',err:'ERR!',ok:' OK '};
+  div.innerHTML=`<span class="log-time">${t}</span><span class="log-lvl-${level}">[${lvlMap[level]||level}]</span><span class="log-msg">${msg}</span>`;
+  el.insertBefore(div,el.firstChild);
+  if(++logCount>80){ el.removeChild(el.lastChild); }
+}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+/* ───────────────────────── clock ───────────────────────── */
+function updateClock(){
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('zh-CN');
+}
+setInterval(updateClock,1000); updateClock();
+window.addEventListener('beforeunload', () => stopAutoRefresh());
+
+/* ───────────────────────── init ───────────────────────── */
+initState();
+// 页面加载时尝试从服务器获取数据
+setTimeout(() => {
+  addLog('info','系统初始化完成，正在连接服务器...');
+  fetchStatus();
+}, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+add_executable(model_manager model_manager.cpp)
+target_link_libraries(model_manager PRIVATE agv_logger agv_ipc systemd rt)
